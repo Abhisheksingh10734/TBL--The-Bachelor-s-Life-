@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TBL - The Bachelor's Life</title>
+  <link rel="icon" type="image/png" href="./images/logo.png" />
+  <link rel="stylesheet" href="./stylesheets/style.css" />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════════ -->
+  <nav role="banner">
+    <div class="nav-inner">
+      <a class="logo" onclick="navigate('home',event)">
+        <span class="logo-mark"><img src="./images/logo.png" alt="TBL Logo"></span>
+        <span class="logo-text">The Bachelor's Life</span>
+      </a>
+
+      <div class="menu" id="desktop-menu" role="navigation">
+        <a onclick="navigate('home',event)" class="active" data-page="home">Home</a>
+        <a onclick="navigate('articles',event)" data-page="articles">Articles</a>
+        <a onclick="navigate('categories',event)" data-page="categories">Categories</a>
+        <a onclick="navigate('about',event)" data-page="about">About</a>
+        <div class="menu-indicator" id="indicator"></div>
+      </div>
+
+      <div class="search-container" id="search-container">
+        <div class="search-wrap">
+          <input type="text" placeholder="Search articles..." id="desktop-search" autocomplete="off"
+            oninput="liveSearch(this.value)" onkeydown="if(event.key==='Enter') fullSearch(this.value)" />
+          <button type="button" onclick="fullSearch(document.getElementById('desktop-search').value)">Search</button>
+        </div>
+        <div class="search-dropdown" id="desktop-dropdown"></div>
+      </div>
+
+      <button class="admin-link" id="admin-nav-btn" onclick="handleAdminNavClick()">Admin Login</button>
+
+      <button class="hamburger" id="hamburger" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <div class="mobile-menu" id="mobile-menu" role="navigation">
+      <a onclick="navigate('home',event);closeMobile()" data-page="home">Home</a>
+      <a onclick="navigate('articles',event);closeMobile()" data-page="articles">Articles</a>
+      <a onclick="navigate('categories',event);closeMobile()" data-page="categories">Categories</a>
+      <a onclick="navigate('about',event);closeMobile()" data-page="about">About</a>
+      <a onclick="handleAdminNavClick();closeMobile()" id="mobile-admin-link">Admin Login</a>
+      <div class="mobile-search">
+        <input type="text" placeholder="Search articles..." id="mobile-search" autocomplete="off"
+          oninput="liveSearchMobile(this.value)"
+          onkeydown="if(event.key==='Enter'){fullSearch(this.value);closeMobile()}" />
+        <button type="button"
+          onclick="fullSearch(document.getElementById('mobile-search').value);closeMobile()">Search</button>
+      </div>
+      <div class="mobile-results" id="mobile-results"></div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════ -->
+  <div class="main-content">
+    <div class="page-content">
+
+      <!-- ─────────────────────────────────
+           HOME
+      ───────────────────────────────── -->
+      <div class="panel active" id="panel-home">
+
+        <!-- 1. HERO BANNER -->
+        <section class="home-hero">
+          <div class="home-hero-text">
+            <p class="hero-label">The Bachelor's Life</p>
+            <h1 class="hero-title">Live Sharp.<br>Live Free.</h1>
+            <p class="hero-sub">Lifestyle, cooking, fitness, and everything a modern bachelor needs to thrive — written
+              by men who figured it out the hard way.</p>
+            <div class="hero-cta-row">
+              <button class="hero-btn-primary" onclick="navigate('articles',event)">Browse Articles</button>
+              <button class="hero-btn-secondary" onclick="fullSearch('featured')">Featured Reads</button>
+            </div>
+          </div>
+          <div class="home-hero-visual">
+            <div class="hero-img-stack">
+              <img class="hero-img-back"
+                src="https://images.unsplash.com/photo-1547592180-85f173990554?w=600&auto=format&fit=crop"
+                alt="Meal prep">
+              <img class="hero-img-front"
+                src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&auto=format&fit=crop"
+                alt="Cooking">
+              <div class="hero-img-badge">
+                <span class="hib-number">15</span>
+                <span class="hib-label">Articles<br>Published</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. STATS BAR -->
+        <section class="stats-bar">
+          <div class="stats-bar-inner">
+            <div class="sbar-item"><span class="sbar-value">15+</span><span class="sbar-label">Articles</span></div>
+            <div class="sbar-divider"></div>
+            <div class="sbar-item"><span class="sbar-value">5</span><span class="sbar-label">Categories</span></div>
+            <div class="sbar-divider"></div>
+            <div class="sbar-item"><span class="sbar-value">847</span><span class="sbar-label">Subscribers</span></div>
+            <div class="sbar-divider"></div>
+            <div class="sbar-item"><span class="sbar-value">24k</span><span class="sbar-label">Monthly Readers</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. CATEGORY PILL STRIP -->
+        <section class="home-section">
+          <div class="section-header">
+            <div>
+              <p class="section-eyebrow">Explore by Topic</p>
+              <h2 class="section-title">What Are You Working On?</h2>
+            </div>
+          </div>
+          <div class="cat-pill-grid">
+            <button class="cat-pill" onclick="openCategory('cooking')">
+              <span class="cat-pill-icon">🍳</span>
+              <span class="cat-pill-name">Cooking</span>
+              <span class="cat-pill-count">4 articles</span>
+            </button>
+            <button class="cat-pill" onclick="openCategory('fitness')">
+              <span class="cat-pill-icon">💪</span>
+              <span class="cat-pill-name">Fitness</span>
+              <span class="cat-pill-count">3 articles</span>
+            </button>
+            <button class="cat-pill" onclick="openCategory('style')">
+              <span class="cat-pill-icon">👔</span>
+              <span class="cat-pill-name">Style</span>
+              <span class="cat-pill-count">3 articles</span>
+            </button>
+            <button class="cat-pill" onclick="openCategory('finance')">
+              <span class="cat-pill-icon">💰</span>
+              <span class="cat-pill-name">Finance</span>
+              <span class="cat-pill-count">3 articles</span>
+            </button>
+            <button class="cat-pill" onclick="openCategory('social')">
+              <span class="cat-pill-icon">🤝</span>
+              <span class="cat-pill-name">Social</span>
+              <span class="cat-pill-count">2 articles</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 4. FEATURED ARTICLES -->
+        <section class="home-section">
+          <div class="section-header">
+            <div>
+              <p class="section-eyebrow">Hand-picked</p>
+              <h2 class="section-title">Featured This Week</h2>
+            </div>
+            <button class="section-link-btn" onclick="navigate('articles',event)">All Articles →</button>
+          </div>
+          <div class="card-grid" id="home-cards"></div>
+        </section>
+
+        <!-- 5. SPOTLIGHT CARD -->
+        <section class="home-section">
+          <div class="spotlight-card" onclick="openArticle(0)">
+            <div class="spotlight-img-wrap">
+              <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=900&auto=format&fit=crop"
+                alt="The Bachelor Kitchen" class="spotlight-img">
+              <span class="spotlight-badge">Editor's Pick</span>
+            </div>
+            <div class="spotlight-body">
+              <span class="spotlight-tag">Featured</span>
+              <h3 class="spotlight-title">The Bachelor Kitchen</h3>
+              <p class="spotlight-desc">Most bachelors survive on takeout until their wallet and waistline start
+                complaining. These five recipes fix both problems in under 20 minutes — no culinary degree required.</p>
+              <div class="spotlight-meta">
+                <span class="spotlight-date">May 3, 2026</span>
+                <button class="spotlight-read-btn">Read Article →</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. EDITORIAL PICKS -->
+        <section class="home-section">
+          <div class="section-header">
+            <div>
+              <p class="section-eyebrow">Latest</p>
+              <h2 class="section-title">More to Read</h2>
+            </div>
+            <button class="section-link-btn" onclick="navigate('articles',event)">See All →</button>
+          </div>
+          <div class="editorial-grid" id="editorial-grid"></div>
+        </section>
+
+        <!-- 7. QUOTE BANNER -->
+        <section class="quote-banner">
+          <div class="quote-banner-inner">
+            <span class="quote-mark">"</span>
+            <blockquote class="quote-text">The man who masters himself masters his world. Start small. Start now.
+            </blockquote>
+            <p class="quote-author">— The Bachelor's Life</p>
+          </div>
+        </section>
+
+        <!-- 8. INLINE NEWSLETTER -->
+        <section class="home-section">
+          <div class="inline-newsletter">
+            <div class="inl-left">
+              <p class="inl-eyebrow">Weekly Dispatch</p>
+              <h3 class="inl-title">Stay Sharp Every Week</h3>
+              <p class="inl-sub">One email. The best article of the week, a quick tip, and nothing else. No spam, ever.
+              </p>
+              <ul class="inl-perks">
+                <li>✓ Best article of the week</li>
+                <li>✓ One actionable tip</li>
+                <li>✓ Unsubscribe any time</li>
+              </ul>
+            </div>
+            <div class="inl-right">
+              <div class="inl-form">
+                <input type="email" id="home-newsletter-email" placeholder="your@email.com" autocomplete="off">
+                <button type="button" onclick="subscribeHome()">Subscribe Free</button>
+              </div>
+              <p class="inl-note">Joining 847 modern men already subscribed.</p>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /panel-home -->
+
+      <!-- ─────────────────────────────────
+           ARTICLES
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-articles">
+        <p class="hero-label">Articles</p>
+        <h2 class="hero-title">Read.<br>Improve.</h2>
+        <p class="hero-sub">Practical guides for real life.</p>
+        <div class="card-grid" id="articles-cards"></div>
+
+        <!-- Full archive with filter tabs + pagination -->
+        <section class="all-articles-section">
+          <div class="section-header" style="margin-top:3.5rem;">
+            <div>
+              <p class="section-eyebrow">Full Archive</p>
+              <h2 class="section-title">All Articles</h2>
+            </div>
+            <span class="articles-total-count" id="articles-total-count"></span>
+          </div>
+
+          <div class="filter-tab-row" id="filter-tab-row">
+            <button class="filter-tab active" data-filter="all" onclick="filterArticles('all')">All</button>
+            <button class="filter-tab" data-filter="cooking" onclick="filterArticles('cooking')">🍳 Cooking</button>
+            <button class="filter-tab" data-filter="fitness" onclick="filterArticles('fitness')">💪 Fitness</button>
+            <button class="filter-tab" data-filter="style" onclick="filterArticles('style')">👔 Style</button>
+            <button class="filter-tab" data-filter="finance" onclick="filterArticles('finance')">💰 Finance</button>
+            <button class="filter-tab" data-filter="social" onclick="filterArticles('social')">🤝 Social</button>
+          </div>
+
+          <div class="articles-list" id="articles-list"></div>
+          <div class="pagination" id="articles-pagination"></div>
+        </section>
+      </div><!-- /panel-articles -->
+
+      <!-- ─────────────────────────────────
+           CATEGORIES
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-categories">
+        <p class="hero-label">Categories</p>
+        <h2 class="hero-title">Browse<br>by Topic.</h2>
+        <p class="hero-sub">Find exactly what you're looking for.</p>
+        <div class="card-grid" id="cat-cards"></div>
+      </div>
+
+      <!-- ─────────────────────────────────
+           CATEGORY VIEW
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-category-view">
+        <button class="back-btn" id="cat-back-btn">
+          <svg viewBox="0 0 24 24">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span>Back to Categories</span>
+        </button>
+        <div class="cat-view-header">
+          <div class="cat-view-icon" id="cat-view-icon">🍳</div>
+          <div>
+            <p class="hero-label" id="cat-view-eyebrow">Category</p>
+            <h2 class="hero-title" id="cat-view-title">Cooking</h2>
+            <p class="cat-view-count" id="cat-view-count"></p>
+          </div>
+        </div>
+        <div class="card-grid" id="cat-view-grid"></div>
+        <div class="pagination" id="cat-pagination"></div>
+      </div>
+
+      <!-- ─────────────────────────────────
+           ABOUT
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-about">
+        <p class="hero-label">About TBL</p>
+        <h2 class="hero-title">Who We<br>Are.</h2>
+        <p class="hero-sub">The Bachelor's Life was built for men navigating life solo — and wanting to do it well.</p>
+
+        <div class="card-grid">
+          <div class="card" onclick="navigate('about', event)">
+            <p class="card-tag">Mission</p>
+            <p class="card-title">Built for Real Life</p>
+            <p class="card-desc">Content that solves actual problems.</p>
+          </div>
+          <div class="card">
+            <p class="card-tag">Contact</p>
+            <p class="card-title">Get in Touch</p>
+            <p class="card-desc">Have a story idea? Reach out.</p>
+          </div>
+        </div>
+
+        <!-- VALUES SECTION -->
+        <section class="about-values">
+          <div class="about-values-header">
+            <p class="section-eyebrow">What We Stand For</p>
+            <h2 class="section-title">The TBL Principles</h2>
+            <p class="about-values-sub">Everything published on this site passes through four filters. If it fails any
+              one of them, it doesn't go out.</p>
+          </div>
+          <div class="values-grid">
+            <div class="value-card">
+              <div class="value-icon">01</div>
+              <h3 class="value-title">Practical First</h3>
+              <p class="value-desc">Every article ends with something you can actually do today — not just information
+                to passively absorb. Advice that lives in the real world, not a TED talk.</p>
+            </div>
+            <div class="value-card">
+              <div class="value-icon">02</div>
+              <h3 class="value-title">No Fluff</h3>
+              <p class="value-desc">We cut to the point. No padding, no unnecessary disclaimers, no 800-word intros
+                before the actual content. Your time is the most valuable thing you have.</p>
+            </div>
+            <div class="value-card">
+              <div class="value-icon">03</div>
+              <h3 class="value-title">Earned, Not Sponsored</h3>
+              <p class="value-desc">Nothing on TBL is paid placement. If we recommend something, it's because it
+                actually works — not because someone paid us to say it does.</p>
+            </div>
+            <div class="value-card">
+              <div class="value-icon">04</div>
+              <h3 class="value-title">Built for Progress</h3>
+              <p class="value-desc">We write for men who are actively improving — not looking for validation of where
+                they already are. Every piece is designed to move you forward.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- CREATOR SECTION -->
+        <section class="about-creator">
+          <div class="creator-card">
+            <div class="creator-left">
+              <div class="creator-avatar-wrap">
+                <div class="creator-avatar">AS</div>
+                <div class="creator-avatar-ring"></div>
+              </div>
+              <div class="creator-socials">
+                <button class="creator-social-btn" aria-label="Instagram">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                      d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                  </svg>
+                </button>
+                <button class="creator-social-btn" aria-label="X / Twitter">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                      d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </button>
+                <button class="creator-social-btn" aria-label="YouTube">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                      d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="creator-right">
+              <p class="section-eyebrow">Behind the Blog</p>
+              <h2 class="creator-name">Abhishek Singh</h2>
+              <p class="creator-role">Founder & Editor-in-Chief</p>
+              <p class="creator-bio">TBL started as a personal notebook — a place to write down everything I had to
+                figure out the hard way after moving out on my own. Cooking, money, fitness, style, how to actually hold
+                a conversation. Nobody handed me a manual, so I built one.</p>
+              <p class="creator-bio">Three years later it became a site, and the notebook became 15 articles and
+                counting. Everything published here is something I either do myself or wished I had read sooner.</p>
+              <div class="creator-stats">
+                <div class="creator-stat">
+                  <span class="cstat-value">3+</span>
+                  <span class="cstat-label">Years Writing</span>
+                </div>
+                <div class="creator-stat-divider"></div>
+                <div class="creator-stat">
+                  <span class="cstat-value">15</span>
+                  <span class="cstat-label">Articles</span>
+                </div>
+                <div class="creator-stat-divider"></div>
+                <div class="creator-stat">
+                  <span class="cstat-value">847</span>
+                  <span class="cstat-label">Subscribers</span>
+                </div>
+              </div>
+              <button class="creator-contact-btn" onclick="showToast('📬 Feature coming soon — stay tuned!')">
+                Get in Touch
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div><!-- /panel-about -->
+
+      <!-- ─────────────────────────────────
+           SEARCH RESULTS
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-search">
+        <p class="hero-label">Search Results</p>
+        <h2 class="hero-title" id="search-heading">Results</h2>
+        <p class="search-count" id="search-count"></p>
+        <div class="results-grid" id="search-results-grid"></div>
+      </div>
+
+      <!-- ─────────────────────────────────
+           ARTICLE DETAIL
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-article">
+        <button class="back-btn" id="back-btn">
+          <svg viewBox="0 0 24 24">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span id="back-label">Back</span>
+        </button>
+        <div class="article-layout">
+          <div class="article-left">
+            <div class="article-meta">
+              <span class="article-tag-badge" id="art-tag"></span>
+              <span class="article-date" id="art-date"></span>
+            </div>
+            <h1 class="article-title" id="art-title"></h1>
+            <p class="article-deck" id="art-deck"></p>
+            <hr class="article-divider">
+            <div class="article-body" id="art-body"></div>
+            <div class="related-section">
+              <p class="related-label">Related Articles</p>
+              <div class="card-grid" id="related-cards"></div>
+            </div>
+          </div>
+          <div class="article-right" id="article-right">
+            <div class="art-img-frame">
+              <img id="art-hero-img" class="art-img-main" src="" alt="">
+              <span class="art-img-tag" id="art-img-tag-overlay"></span>
+              <span class="art-img-date" id="art-img-date-overlay"></span>
+            </div>
+            <div class="art-side-rule"></div>
+            <div id="art-side-related">
+              <p class="art-side-label">More in this category</p>
+              <div class="art-mini-list" id="art-mini-list"></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-article -->
+
+      <!-- ─────────────────────────────────
+           ADMIN LOGIN
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-adminlogin">
+        <div class="admin-login-wrap">
+          <div class="login-card">
+            <div class="login-logo">
+              <span class="logo-mark">TBL</span>
+              <span>Admin Portal</span>
+            </div>
+            <h2 class="login-heading">Welcome Back</h2>
+            <p class="login-sub">Sign in to manage articles, categories, and site settings.</p>
+            <div class="form-group">
+              <label class="form-label" for="login-username">Username</label>
+              <input class="form-input" type="text" id="login-username" placeholder="admin" autocomplete="off"
+                onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()" />
+              <p class="form-error" id="err-username">Please enter your username.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="login-password">Password</label>
+              <div class="password-wrap">
+                <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="off"
+                  onkeydown="if(event.key==='Enter') doLogin()" />
+                <button class="toggle-pw" onclick="togglePw()" type="button" aria-label="Toggle password visibility">
+                  <svg id="pw-eye" viewBox="0 0 24 24">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
+              <p class="form-error" id="err-password">Incorrect username or password.</p>
+            </div>
+            <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+            <p class="login-hint">Demo credentials: <strong>admin</strong> / <strong>tbl2026</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─────────────────────────────────
+           ADMIN DASHBOARD
+      ───────────────────────────────── -->
+      <div class="panel" id="panel-dashboard">
+        <div class="dashboard-header">
+          <h2 class="dashboard-title">Dashboard</h2>
+          <div class="dashboard-user">
+            <div class="user-avatar">A</div>
+            <div class="user-info">
+              <p class="user-name">Abhishek Singh</p>
+              <p class="user-role">Admin</p>
+            </div>
+            <button class="logout-btn" onclick="doLogout()">Logout</button>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <p class="stat-value">15</p>
+            <p class="stat-label">Total Articles</p>
+            <p class="stat-change">↑ 3 this month</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-value">5</p>
+            <p class="stat-label">Categories</p>
+            <p class="stat-change">↑ 1 new</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-value">847</p>
+            <p class="stat-label">Subscribers</p>
+            <p class="stat-change">↑ 12 this week</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-value">24k</p>
+            <p class="stat-label">Monthly Views</p>
+            <p class="stat-change">↑ 18% vs last month</p>
+          </div>
+        </div>
+        <div class="section-head">
+          <p class="section-head-title">All Articles</p>
+          <button class="pill-btn" onclick="openNewArticle()">+ New Article</button>
+          <button class="pill-btn" style="background:none;border:1px solid rgba(255,255,255,.1);color:#888;"
+            onclick="resetArticlesToDefault()">
+            ↺ Reset to Defaults
+          </button>
+        </div>
+        <div style="overflow-x:auto;border-radius:6px;">
+          <table class="articles-table" id="articles-table"></table>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+
+    <!-- ═══════════════════════════════════════
+         ARTICLE MODAL
+    ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="article-modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <p class="modal-title" id="modal-title-text">New Article</p>
+          <button class="modal-close" onclick="closeModal('article-modal')">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="modal-article-id" value="">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" type="text" id="modal-art-title" placeholder="e.g. The Bachelor Kitchen">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category Tag</label>
+            <select class="form-input" id="modal-art-tag">
+              <option value="Featured">Featured</option>
+              <option value="Cooking">Cooking</option>
+              <option value="Fitness">Fitness</option>
+              <option value="Finance">Finance</option>
+              <option value="Style">Style</option>
+              <option value="Grooming">Grooming</option>
+              <option value="Social">Social</option>
+              <option value="Trending">Trending</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-input" id="modal-art-category">
+              <option value="cooking">Cooking</option>
+              <option value="fitness">Fitness</option>
+              <option value="finance">Finance</option>
+              <option value="style">Style</option>
+              <option value="social">Social</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Short Description</label>
+            <input class="form-input" type="text" id="modal-art-desc" placeholder="One-line summary shown on cards">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Deck (intro quote)</label>
+            <input class="form-input" type="text" id="modal-art-deck" placeholder="Bold opening line under the title">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Body (HTML supported)</label>
+            <textarea class="form-input" id="modal-art-body"
+              placeholder="<h2>Section</h2><p>Your content here...</p>"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Image URL (optional)</label>
+            <input class="form-input" type="text" id="modal-art-img" placeholder="https://images.unsplash.com/..."
+              oninput="previewThumb(this.value)">
+            <img id="modal-thumb-preview" class="modal-thumb-preview" src="" alt="Image preview">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn secondary" onclick="closeModal('article-modal')">Cancel</button>
+          <button class="modal-btn primary" onclick="saveArticle()">Save Article</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         CONFIRM DELETE MODAL
+    ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="confirm-modal">
+      <div class="modal-box confirm-box">
+        <div class="modal-body" style="padding:2rem 1.75rem 1rem;text-align:center;">
+          <p class="confirm-icon">🗑️</p>
+          <p class="confirm-title" id="confirm-title">Delete Article?</p>
+          <p class="confirm-msg" id="confirm-msg">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer" style="justify-content:center;">
+          <button class="modal-btn secondary" onclick="closeModal('confirm-modal')">Cancel</button>
+          <button class="modal-btn danger" id="confirm-ok-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+  </div><!-- /main-content -->
+
+  <!-- ═══════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════ -->
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo" onclick="navigate('home',event)">
+          <span class="logo-mark"><img src="./images/logo.png" alt="The Bachelor's Life Logo"></span>
+          <span class="logo-name">The Bachelor's Life</span>
+        </div>
+        <p class="footer-tagline">Real advice for modern men. No fluff, no filler — just practical content that helps
+          you live better.</p>
+        <div class="social-row">
+          <button class="social-btn" aria-label="Instagram">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+          </button>
+          <button class="social-btn" aria-label="X / Twitter">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </button>
+          <button class="social-btn" aria-label="YouTube">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <p class="footer-col-title">Navigate</p>
+        <ul>
+          <li><a onclick="navigate('home',event)">Home</a></li>
+          <li><a onclick="navigate('articles',event)">Articles</a></li>
+          <li><a onclick="navigate('categories',event)">Categories</a></li>
+          <li><a onclick="navigate('about',event)">About</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <p class="footer-col-title">Categories</p>
+        <ul>
+          <li><a onclick="openCategory('cooking')">Cooking & Food</a></li>
+          <li><a onclick="openCategory('fitness')">Fitness</a></li>
+          <li><a onclick="openCategory('style')">Style</a></li>
+          <li><a onclick="openCategory('finance')">Finance</a></li>
+          <li><a onclick="openCategory('social')">Social Life</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <p class="footer-col-title">Company</p>
+        <ul>
+          <li><a onclick="navigate('about',event)">About Us</a></li>
+          <li><a href="#">Write for Us</a></li>
+          <li><a href="#">Advertise</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a onclick="handleAdminNavClick()">Admin Login</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-newsletter">
+      <div class="newsletter-inner">
+        <div class="newsletter-copy">
+          <p>Stay Sharp. Stay Free.</p>
+          <p>Get the best articles delivered to your inbox every week. No spam, ever.</p>
+        </div>
+        <div class="newsletter-form">
+          <input type="email" id="newsletter-email" placeholder="your@email.com" autocomplete="off" />
+          <button type="button" onclick="subscribeNewsletter()">Subscribe</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-bottom-inner">
+        <p class="footer-copy">© 2026 The Bachelor's Life. Made with <span>♥</span> for modern men.</p>
+        <div class="footer-legal">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+          <a href="#">Cookie Policy</a>
+          <a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- GSAP must load first — cursor.js and all page scripts depend on it -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- Core app — must be first, contains ARTICLES array and all functions -->
+  <script src="./scripts/script.js"></script>
+
+  <!-- Newsletter — must come after script.js (overrides subscribeNewsletter/subscribeHome) -->
+  <!-- <script src="./scripts/newsletter.js"></script> -->
+
+  <!-- Features — must come after script.js (patches openArticle, cardHTML etc.) -->
+  <script src="./scripts/features.js"></script>
+
+  <!-- Cursor — after GSAP so gsap.to() is available for trail effect -->
+  <script src="./scripts/cursor.js"></script>
+
+  <!-- GSAP animations — order matters: home → navbar → pages → advanced -->
+  <script src="./scripts/gsap.js"></script>
+  <script src="./scripts/gsap_navbar.js"></script>
+  <script src="./scripts/gsap_pages.js"></script>
+  <script src="./scripts/gsap_advanced.js"></script>
+
+</body>
+
+</html>
