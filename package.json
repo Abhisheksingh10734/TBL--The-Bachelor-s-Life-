@@ -1,0 +1,14 @@
+{
+  "name": "tbl-site",
+  "version": "1.0.0",
+  "description": "The Bachelor's Life",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --dev && npx serve .",
+    "start": "npx serve ."
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "serve": "^14.2.3"
+  }
+}

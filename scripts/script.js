@@ -1,3 +1,10 @@
+import {
+  auth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from './firebase.js';
+
 /* ─────────────────────────────────────────────
    DEFAULT ARTICLES (seed data — used only on
    first ever load or after a reset)
@@ -156,7 +163,7 @@ function loadArticles() {
 }
 
 const ARTICLES = loadArticles();
-window.ARTICLES = ARTICLES; 
+window.ARTICLES = ARTICLES;
 
 function persistArticles() {
   try {
@@ -169,17 +176,15 @@ function persistArticles() {
 function resetArticlesToDefault() {
   if (!confirm('Reset all articles to the 15 default articles? This cannot be undone.')) return;
   ARTICLES.length = 0;
-  DEFAULT_ARTICLES.forEach((a, i) => ARTICLES.push({ ...a, id: i }));
   persistArticles();
   if (typeof buildDashboard === 'function') buildDashboard();
-  if (typeof showToast      === 'function') showToast('✅ Articles reset to defaults.');
+  if (typeof showToast === 'function') showToast('✅ Articles reset to defaults.');
   navigate('dashboard');
 }
 
 /* ─────────────────────────────────────────────
    AUTH
 ───────────────────────────────────────────── */
-const CREDS = { username: 'admin', password: 'tbl2026' };
 let isLoggedIn = false;
 let prevPage = 'home', currentPage = 'home';
 
@@ -190,6 +195,7 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
 function highlight(t, q) {
   if (!q) return esc(t);
   const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
@@ -213,7 +219,7 @@ const SPECIAL_PAGES = ['search', 'article', 'adminlogin', 'dashboard', 'category
 
 function navigate(page, e) {
   if (e) e.preventDefault();
-  if (page === 'dashboard' && !isLoggedIn) { navigate('adminlogin'); return; }
+  if (page === 'dashboard' && !auth.currentUser) { navigate('adminlogin'); return; }
   currentPage = page;
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + page).classList.add('active');
@@ -503,46 +509,57 @@ function togglePw() {
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-function doLogin() {
-  const u = document.getElementById('login-username').value.trim();
-  const p = document.getElementById('login-password').value;
-  const eu = document.getElementById('err-username');
-  const ep = document.getElementById('err-password');
-  eu.classList.remove('visible'); ep.classList.remove('visible');
-  document.getElementById('login-username').classList.remove('error');
-  document.getElementById('login-password').classList.remove('error');
+async function doLogin() {
 
-  if (!u) {
-    eu.classList.add('visible');
-    document.getElementById('login-username').classList.add('error');
-    document.getElementById('login-username').focus();
-    return;
-  }
-  if (u !== CREDS.username || p !== CREDS.password) {
-    ep.textContent = 'Incorrect username or password.';
-    ep.classList.add('visible');
-    document.getElementById('login-password').classList.add('error');
-    document.getElementById('login-password').value = '';
-    document.getElementById('login-password').focus();
-    return;
-  }
+  const email =
+    document.getElementById('login-username').value.trim();
 
-  const btn = document.getElementById('login-btn');
-  btn.textContent = 'Signing in…'; btn.classList.add('loading');
-  setTimeout(() => {
+  const password =
+    document.getElementById('login-password').value;
+
+  const errEl = document.getElementById('err-password');
+
+  // clear old error
+  errEl.textContent = '';
+  errEl.classList.remove('visible');
+
+  try {
+
+    await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
     isLoggedIn = true;
-    btn.textContent = 'Sign In'; btn.classList.remove('loading');
-    document.getElementById('login-username').value = '';
-    document.getElementById('login-password').value = '';
+
     updateAdminBtn();
+
     buildDashboard();
+
     navigate('dashboard');
-  }, 800);
+
+    showToast('✅ Logged in successfully');
+
+  } catch (err) {
+
+    console.error(err);
+
+    errEl.textContent =
+      'Invalid email or password';
+
+    errEl.classList.add('visible');
+  }
 }
 
-function doLogout() {
+async function doLogout() {
+
+  await signOut(auth);
+
   isLoggedIn = false;
+
   updateAdminBtn();
+
   navigate('home');
 }
 
@@ -607,7 +624,7 @@ function openNewArticle() {
 }
 
 function openEditArticle(id) {
-  const a = ARTICLES[id]; if (!a) return;
+  const a = ARTICLES.find(article => article.id == id);
   document.getElementById('modal-title-text').textContent = 'Edit Article';
   document.getElementById('modal-article-id').value = id;
   document.getElementById('modal-art-title').value = a.title;
@@ -643,14 +660,14 @@ function saveArticle() {
     ARTICLES.push(data);
     showToast('✅ Article published.');
   }
-    
+
   persistArticles();       // ← ONLY NEW LINE
   closeModal('article-modal');
   buildDashboard();
 }
 
 function confirmDelete(id) {
-  const a = ARTICLES[id]; if (!a) return;
+const a = ARTICLES.find(article => article.id == id);
   document.getElementById('confirm-title').textContent = `Delete "${a.title}"?`;
   document.getElementById('confirm-msg').textContent = 'This will permanently remove the article and cannot be undone.';
   document.getElementById('confirm-ok-btn').onclick = () => { deleteArticle(id); closeModal('confirm-modal'); };
@@ -658,10 +675,17 @@ function confirmDelete(id) {
 }
 
 function deleteArticle(id) {
-  ARTICLES.splice(id, 1);
-  ARTICLES.forEach((a, i) => a.id = i);
-  persistArticles();          // ← ONLY NEW LINE
+
+  const index = ARTICLES.findIndex(a => a.id == id);
+
+  if (index === -1) return;
+
+  ARTICLES.splice(index, 1);
+
+  persistArticles();
+
   buildDashboard();
+
   showToast('🗑️ Article deleted.');
 }
 
@@ -865,40 +889,20 @@ function renderArticlesList(page) {
   if (sec && page > 1) sec.scrollIntoView({ behavior: 'smooth' });
 }
 
-
-
-/* =================================================================
-   TBL — WORKING NEWSLETTER SYSTEM
-   
-   HOW TO CONNECT A REAL EMAIL SERVICE (takes 5 minutes):
-   ──────────────────────────────────────────────────────
-   1. Go to https://www.emailjs.com → sign up free (200 emails/month)
-   2. Create an Email Service (connect your Gmail or other)
-   3. Create two Email Templates:
-      a) "subscriber_welcome" — sent to the person who subscribes
-         Template variables: {{to_email}}, {{to_name}}
-      b) "admin_notify"      — sent to you when someone subscribes
-         Template variables: {{subscriber_email}}, {{subscriber_count}}
-   4. Copy your Public Key, Service ID, and Template IDs
-   5. Fill in the CONFIG object below
-   
-   Without config it still works fully — stores subscribers in
-   localStorage and shows success/error UI — just no real emails.
-================================================================= */
-
 (function () {
   'use strict';
 
   /* ─────────────────────────────────────────────
      CONFIG — fill these in from your EmailJS dashboard
   ───────────────────────────────────────────── */
+  const ENV = window.__TBL_ENV__ || {};
   const CONFIG = {
-    emailjs_public_key: 'wKAmdwKG_Q2bcRhgU',   // e.g. 'user_abc123XYZ'
-    emailjs_service_id: 'service_vg6a6oi',   // e.g. 'service_gmail'
-    template_welcome: 'template_ahfjjdr',   // e.g. 'subscriber_welcome'
-    template_admin_notify: 'template_kk0nxfc',   // e.g. 'admin_notify'
-    admin_email: 'abhisingh10734@gmail.com',   // your email for admin notifications
-    site_name: "The Bachelor's Life",
+    emailjs_public_key: ENV.EMAILJS_PUBLIC_KEY,
+    emailjs_service_id: ENV.EMAILJS_SERVICE_ID,
+    template_welcome: ENV.EMAILJS_TEMPLATE_WELCOME,
+    template_admin_notify: ENV.EMAILJS_TEMPLATE_ADMIN,
+    admin_email: ENV.EMAILJS_ADMIN_EMAIL,
+    site_name: ENV.SITE_NAME || "The Bachelor's Life",
   };
 
   const EMAILJS_READY = !!(
@@ -1345,14 +1349,6 @@ function renderArticlesList(page) {
   };
 
   /* ─────────────────────────────────────────────
-     SAFE esc() — use global or define locally
-  ───────────────────────────────────────────── */
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, c =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
-
-  /* ─────────────────────────────────────────────
      INIT
   ───────────────────────────────────────────── */
   window.addEventListener('load', () => {
@@ -1366,3 +1362,49 @@ function renderArticlesList(page) {
   });
 
 })();
+
+// Make functions global for inline onclick handlers
+window.navigate = navigate;
+window.openArticle = openArticle;
+window.openCategory = openCategory;
+window.renderCatPage = renderCatPage;
+window.renderArticlesList = renderArticlesList;
+window.filterArticles = filterArticles;
+
+window.handleAdminNavClick = handleAdminNavClick;
+window.togglePw = togglePw;
+window.doLogin = doLogin;
+window.doLogout = doLogout;
+
+window.openNewArticle = openNewArticle;
+window.openEditArticle = openEditArticle;
+window.saveArticle = saveArticle;
+window.confirmDelete = confirmDelete;
+window.deleteArticle = deleteArticle;
+
+window.liveSearch = liveSearch;
+window.liveSearchMobile = liveSearchMobile;
+window.fullSearch = fullSearch;
+
+window.subscribeNewsletter = subscribeNewsletter;
+window.subscribeHome = subscribeHome;
+
+window.closeMobile = closeMobile;
+
+onAuthStateChanged(auth, user => {
+
+  if (user) {
+
+    isLoggedIn = true;
+
+    updateAdminBtn();
+
+    buildDashboard();
+
+  } else {
+
+    isLoggedIn = false;
+
+    updateAdminBtn();
+  }
+});
