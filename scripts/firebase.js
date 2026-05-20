@@ -1,314 +1,257 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-
 import {
-    getFirestore, collection, getDocs,
-    doc, setDoc, deleteDoc, writeBatch,
-    onSnapshot, orderBy, query
+  getFirestore, collection, getDocs,
+  doc, setDoc, deleteDoc, writeBatch,
+  onSnapshot, orderBy, query
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-
 import {
   getAuth,
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
 /* ─────────────────────────────────────────────
-   YOUR CONFIG — paste from Firebase console
+   CONFIG — populated by build.js via env.js
 ───────────────────────────────────────────── */
 const ENV    = window.__TBL_ENV__ || {};
 const CONFIG = {
-  apiKey:            ENV.FIREBASE_API_KEY,
-  authDomain:        ENV.FIREBASE_AUTH_DOMAIN,
-  projectId:         ENV.FIREBASE_PROJECT_ID,
-  storageBucket:     ENV.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: ENV.FIREBASE_MESSAGING_SENDER_ID,
-  appId:             ENV.FIREBASE_APP_ID,
-  measurementId:     ENV.FIREBASE_MEASUREMENT_ID
+  apiKey:            ENV.FIREBASE_API_KEY            || '',
+  authDomain:        ENV.FIREBASE_AUTH_DOMAIN        || '',
+  projectId:         ENV.FIREBASE_PROJECT_ID         || '',
+  storageBucket:     ENV.FIREBASE_STORAGE_BUCKET     || '',
+  messagingSenderId: ENV.FIREBASE_MESSAGING_SENDER_ID|| '',
+  appId:             ENV.FIREBASE_APP_ID             || '',
 };
- 
 
 /* ─────────────────────────────────────────────
-   GUARD — if config is empty, skip Firebase
-   and fall back to localStorage silently
+   GUARD — skip Firebase entirely if not configured
 ───────────────────────────────────────────── */
 const FB_READY = !!CONFIG.apiKey && !!CONFIG.projectId;
 
 if (!FB_READY) {
-    console.info('TBL Firebase: No config found — using localStorage fallback.');
+  console.info('TBL Firebase: No config — localStorage only.');
 }
 
 /* ─────────────────────────────────────────────
    INIT
 ───────────────────────────────────────────── */
-let db = null;
+let db          = null;
+let auth        = null;
 let articlesCol = null;
 
-let auth = null;
-
 if (FB_READY) {
+  try {
     const app = initializeApp(CONFIG);
-
-    db = getFirestore(app);
-    auth = getAuth(app);
-
+    db          = getFirestore(app);
+    auth        = getAuth(app);
     articlesCol = collection(db, 'articles');
+  } catch (e) {
+    console.warn('TBL Firebase: init failed.', e);
+  }
 }
 
 /* ─────────────────────────────────────────────
-   LOAD all articles from Firestore
-   Returns array sorted by id ascending
+   FIRESTORE HELPERS
 ───────────────────────────────────────────── */
 async function loadFromFirestore() {
-    if (!FB_READY) return null;
-    try {
-        const q = query(articlesCol, orderBy('id', 'asc'));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) return null;          // nothing in DB yet
-        return snapshot.docs.map(d => d.data());
-    } catch (e) {
-        console.warn('TBL Firebase: load failed, using localStorage.', e);
-        return null;
-    }
+  if (!FB_READY || !db) return null;
+  try {
+    const snapshot = await getDocs(query(articlesCol, orderBy('id', 'asc')));
+    if (snapshot.empty) return null;
+    return snapshot.docs.map(d => d.data());
+  } catch (e) {
+    console.warn('TBL Firebase: load failed.', e);
+    return null;
+  }
 }
 
-/* ─────────────────────────────────────────────
-   SAVE one article (create or update)
-   Uses article.id as the document key
-───────────────────────────────────────────── */
 async function saveToFirestore(article) {
-    if (!FB_READY || !db) return;
-    try {
-        const ref = doc(articlesCol, String(article.id));
-        await setDoc(ref, article);
-    } catch (e) {
-        console.warn('TBL Firebase: save failed.', e);
-    }
+  if (!FB_READY || !db) return;
+  try {
+    await setDoc(doc(articlesCol, String(article.id)), article);
+  } catch (e) {
+    console.warn('TBL Firebase: save failed.', e);
+  }
 }
 
-/* ─────────────────────────────────────────────
-   DELETE one article
-───────────────────────────────────────────── */
 async function deleteFromFirestore(id) {
-    if (!FB_READY || !db) return;
-    try {
-        await deleteDoc(doc(articlesCol, String(id)));
-    } catch (e) {
-        console.warn('TBL Firebase: delete failed.', e);
-    }
+  if (!FB_READY || !db) return;
+  try {
+    await deleteDoc(doc(articlesCol, String(id)));
+  } catch (e) {
+    console.warn('TBL Firebase: delete failed.', e);
+  }
 }
 
-/* ─────────────────────────────────────────────
-   WRITE all 15 default articles to Firestore
-   Called automatically if DB is empty
-───────────────────────────────────────────── */
 async function seedFirestore(articles) {
-    if (!FB_READY || !db) return;
-    try {
-        const batch = writeBatch(db);
-        articles.forEach(a => {
-            const ref = doc(articlesCol, String(a.id));
-            batch.set(ref, a);
-        });
-        await batch.commit();
-        console.info('TBL Firebase: seeded', articles.length, 'default articles.');
-    } catch (e) {
-        console.warn('TBL Firebase: seed failed.', e);
-    }
+  if (!FB_READY || !db) return;
+  try {
+    const batch = writeBatch(db);
+    articles.forEach(a => batch.set(doc(articlesCol, String(a.id)), a));
+    await batch.commit();
+    console.info('TBL Firebase: seeded', articles.length, 'articles.');
+  } catch (e) {
+    console.warn('TBL Firebase: seed failed.', e);
+  }
 }
 
 /* ─────────────────────────────────────────────
-   REAL-TIME LISTENER
-   Updates the live ARTICLES array whenever
-   another device changes something in Firestore
+   REAL-TIME SYNC
 ───────────────────────────────────────────── */
 function startLiveSync() {
-    if (!FB_READY || !db) return;
+  if (!FB_READY || !db) return;
 
-    const q = query(articlesCol, orderBy('id', 'asc'));
-    onSnapshot(q, snapshot => {
-        if (snapshot.empty) return;
+  onSnapshot(query(articlesCol, orderBy('id', 'asc')), snapshot => {
+    if (snapshot.empty) return;
+    const fresh = snapshot.docs.map(d => d.data());
+    if (JSON.stringify(fresh) === JSON.stringify(window.ARTICLES)) return;
 
-        const fresh = snapshot.docs.map(d => d.data());
+    window.ARTICLES.length = 0;
+    fresh.forEach(a => window.ARTICLES.push(a));
+    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
 
-        // Only update if something actually changed
-        if (JSON.stringify(fresh) === JSON.stringify(window.ARTICLES)) return;
-
-        // Sync live array
-        window.ARTICLES.length = 0;
-        fresh.forEach(a => window.ARTICLES.push(a));
-
-        // Persist to localStorage as offline cache
-        try {
-            localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES));
-        } catch (_) { }
-
-        // Rebuild any open UI that shows articles
-        if (typeof buildDashboard === 'function' &&
-            document.getElementById('panel-dashboard')?.classList.contains('active')) {
-            buildDashboard();
-            showToast?.('🔄 Articles synced from cloud.');
-        }
-        if (typeof filterArticles === 'function' &&
-            document.getElementById('panel-articles')?.classList.contains('active')) {
-            filterArticles(window._articlesListFilter || 'all');
-        }
-        if (typeof initHome === 'function' &&
-            document.getElementById('panel-home')?.classList.contains('active')) {
-            initHome();
-        }
-    }, err => {
-        console.warn('TBL Firebase: live sync error.', err);
-    });
-}
-
-/* ─────────────────────────────────────────────
-   PATCH script.js functions
-   Waits for window.load so script.js has run
-───────────────────────────────────────────── */
-window.addEventListener('load', async () => {
-
-    /* ── 1. Replace persistArticles with Firestore version ── */
-    window.persistArticles = function () {
-        // Always keep localStorage as offline cache
-        try {
-            localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES));
-        } catch (_) { }
-        // Fire-and-forget sync to Firestore — no need to await
-        if (FB_READY) {
-            window.ARTICLES.forEach(a => saveToFirestore(a));
-        }
-    };
-
-    /* ── 2. Replace deleteArticle with Firestore version ── */
-    const _origDelete = window.deleteArticle;
-    window.deleteArticle = function (id) {
-        const articleId = window.ARTICLES[id]?.id;        // capture before splice
-        if (_origDelete) _origDelete(id);                  // does splice + reindex + buildDashboard
-        if (FB_READY && articleId !== undefined) {
-            deleteFromFirestore(articleId).then(() => {
-                // After delete, rewrite all remaining docs with new IDs
-                window.ARTICLES.forEach(a => saveToFirestore(a));
-            });
-        }
-    };
-
-    /* ── 3. Replace resetArticlesToDefault with Firestore version ── */
-    const _origReset = window.resetArticlesToDefault;
-    window.resetArticlesToDefault = function () {
-        if (!confirm('Reset all articles to the 15 default articles? This cannot be undone.')) return;
-        const defaults = window.DEFAULT_ARTICLES || [];
-        window.ARTICLES.length = 0;
-        defaults.forEach((a, i) => window.ARTICLES.push({ ...a, id: i }));
-        // Save locally
-        try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) { }
-        // Overwrite Firestore
-        if (FB_READY) seedFirestore(window.ARTICLES);
-        if (typeof buildDashboard === 'function') buildDashboard();
-        if (typeof showToast === 'function') showToast('✅ Articles reset to defaults.');
-        if (typeof navigate === 'function') navigate('dashboard');
-    };
-
-    /* ── 4. Initial load from Firestore ── */
-    if (FB_READY && window.ARTICLES) {
-        showLoadingOverlay(true);
-
-        const cloudArticles = await loadFromFirestore();
-
-        if (cloudArticles && cloudArticles.length > 0) {
-            // Cloud has data — use it
-            window.ARTICLES.length = 0;
-            cloudArticles.forEach(a => window.ARTICLES.push(a));
-            try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) { }
-            console.info('TBL Firebase: loaded', cloudArticles.length, 'articles from cloud.');
-        } else {
-            // Cloud is empty — seed it with current articles (from localStorage or defaults)
-            await seedFirestore(window.ARTICLES);
-        }
-
-        showLoadingOverlay(false);
-
-        // Rebuild UI with fresh data
-        if (typeof buildCards === 'function') {
-            buildCards('home-cards', window.ARTICLES.slice(0, 3));
-            buildCards('articles-cards', window.ARTICLES.slice(3, 7));
-        }
-        if (typeof initHome === 'function') initHome();
-        if (typeof initArticlesPage === 'function') initArticlesPage();
-
-        // Start listening for real-time changes from other devices
-        startLiveSync();
+    if (typeof buildDashboard === 'function' &&
+        document.getElementById('panel-dashboard')?.classList.contains('active')) {
+      buildDashboard();
+      if (typeof showToast === 'function') showToast('🔄 Articles synced.');
     }
-});
-
-// window._tblFirebase.onAuthStateChanged(
-//   window._tblFirebase.auth,
-//   user => {
-
-//     if (user) {
-
-//       isLoggedIn = true;
-
-//       updateAdminBtn();
-
-//     } else {
-
-//       isLoggedIn = false;
-
-//       updateAdminBtn();
-//     }
-//   }
-// );
+    if (typeof filterArticles === 'function' &&
+        document.getElementById('panel-articles')?.classList.contains('active')) {
+      filterArticles(window._articlesListFilter || 'all');
+    }
+    if (typeof initHome === 'function' &&
+        document.getElementById('panel-home')?.classList.contains('active')) {
+      initHome();
+    }
+  }, err => console.warn('TBL Firebase: live sync error.', err));
+}
 
 /* ─────────────────────────────────────────────
    LOADING OVERLAY
-   Shown during the initial cloud fetch
+   BUG FIX — try/finally + 6-second hard timeout
 ───────────────────────────────────────────── */
+let _overlayTimeout = null;
+
 function showLoadingOverlay(show) {
-    let el = document.getElementById('tbl-fb-loader');
-    if (!el && show) {
-        el = document.createElement('div');
-        el.id = 'tbl-fb-loader';
-        el.style.cssText = `
+  let el = document.getElementById('tbl-fb-loader');
+
+  if (!el && show) {
+    el    = document.createElement('div');
+    el.id = 'tbl-fb-loader';
+    el.style.cssText = `
       position:fixed; inset:0; background:rgba(10,10,10,0.85);
       z-index:99999; display:flex; flex-direction:column;
       align-items:center; justify-content:center; gap:1rem;
     `;
-        el.innerHTML = `
-      <div style="
-        width:40px; height:40px; border-radius:50%;
-        border:3px solid rgba(255,255,255,0.1);
-        border-top-color:#e31c1c;
-        animation:tbl-spin 0.8s linear infinite;
-      "></div>
+    el.innerHTML = `
+      <div style="width:40px;height:40px;border-radius:50%;
+        border:3px solid rgba(255,255,255,0.1);border-top-color:#e31c1c;
+        animation:tbl-spin 0.8s linear infinite;"></div>
       <p style="font-family:'Barlow',sans-serif;font-size:13px;
         font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-        color:#888;">Loading articles…</p>
-      <style>
-        @keyframes tbl-spin { to { transform:rotate(360deg); } }
-      </style>
+        color:#888;margin:0;">Loading articles…</p>
+      <style>@keyframes tbl-spin{to{transform:rotate(360deg);}}</style>
     `;
-        document.body.appendChild(el);
-    } else if (el && !show) {
-        el.style.opacity = '0';
-        el.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => el?.remove(), 320);
-    }
+    document.body.appendChild(el);
+
+    /* Hard timeout — overlay ALWAYS closes after 6 s */
+    _overlayTimeout = setTimeout(() => {
+      console.warn('TBL Firebase: loader timeout — forcing close.');
+      showLoadingOverlay(false);
+    }, 6000);
+
+  } else if (el && !show) {
+    if (_overlayTimeout) { clearTimeout(_overlayTimeout); _overlayTimeout = null; }
+    el.style.opacity    = '0';
+    el.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => el?.remove(), 320);
+  }
 }
 
 /* ─────────────────────────────────────────────
-   EXPORT helpers so other scripts can use them
+   MAIN LOAD LISTENER
 ───────────────────────────────────────────── */
-window._tblFirebase = { saveToFirestore, deleteFromFirestore, seedFirestore, FB_READY };
+window.addEventListener('load', async () => {
 
-window._tblFirebase.auth = auth;
-window._tblFirebase.signInWithEmailAndPassword = signInWithEmailAndPassword;
-window._tblFirebase.onAuthStateChanged = onAuthStateChanged;
-window._tblFirebase.signOut = signOut;
+  /* ── Patch 1: persistArticles ── */
+  window.persistArticles = function () {
+    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
+    if (FB_READY) window.ARTICLES.forEach(a => saveToFirestore(a));
+  };
 
-export {
-  auth,
-  db,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
-};
+  /* ── Patch 2: deleteArticle ── */
+  const _origDelete = window.deleteArticle;
+  window.deleteArticle = function (id) {
+    const articleId = window.ARTICLES.find(a => a.id == id)?.id;
+    if (_origDelete) _origDelete(id);
+    if (FB_READY && articleId !== undefined) {
+      deleteFromFirestore(articleId).then(() => {
+        window.ARTICLES.forEach(a => saveToFirestore(a));
+      });
+    }
+  };
+
+  /* ── Patch 3: resetArticlesToDefault ── */
+  window.resetArticlesToDefault = function () {
+    if (!confirm('Reset all articles to defaults? This cannot be undone.')) return;
+    const defaults = window.DEFAULT_ARTICLES || [];
+    window.ARTICLES.length = 0;
+    defaults.forEach((a, i) => window.ARTICLES.push({ ...a, id: i }));
+    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
+    if (FB_READY) seedFirestore(window.ARTICLES);
+    if (typeof buildDashboard === 'function') buildDashboard();
+    if (typeof showToast      === 'function') showToast('✅ Articles reset to defaults.');
+    if (typeof navigate       === 'function') navigate('dashboard');
+  };
+
+  /* ── Auth state listener ──
+     BUG FIX — was commented out; now active.
+     Handles page refresh while logged in.        */
+  if (auth) {
+    onAuthStateChanged(auth, user => {
+      /* isLoggedIn lives in script.js — update it via window */
+      window.isLoggedIn = !!user;
+      if (typeof updateAdminBtn === 'function') updateAdminBtn();
+      if (user && typeof buildDashboard === 'function') buildDashboard();
+    });
+  }
+
+  /* ── BUG FIX — skip Firestore load if not configured ── */
+  if (!FB_READY || !window.ARTICLES) return;
+
+  /* ── BUG FIX — try/finally so overlay ALWAYS closes ── */
+  showLoadingOverlay(true);
+  try {
+    const cloudArticles = await loadFromFirestore();
+    if (cloudArticles && cloudArticles.length > 0) {
+      window.ARTICLES.length = 0;
+      cloudArticles.forEach(a => window.ARTICLES.push(a));
+      try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
+      console.info('TBL Firebase: loaded', cloudArticles.length, 'articles from cloud.');
+    } else {
+      await seedFirestore(window.ARTICLES);
+    }
+  } catch (e) {
+    console.warn('TBL Firebase: initial load error — keeping localStorage data.', e);
+  } finally {
+    showLoadingOverlay(false);   /* always runs */
+  }
+
+  /* Rebuild UI with synced data */
+  if (typeof buildCards       === 'function') {
+    buildCards('home-cards',     window.ARTICLES.slice(0, 3));
+    buildCards('articles-cards', window.ARTICLES.slice(3, 7));
+  }
+  if (typeof initHome         === 'function') initHome();
+  if (typeof initArticlesPage === 'function') initArticlesPage();
+
+  startLiveSync();
+});
+
+/* ─────────────────────────────────────────────
+   EXPORTS — used by script.js doLogin/doLogout
+───────────────────────────────────────────── */
+export { auth, db, signInWithEmailAndPassword, onAuthStateChanged, signOut };
+
+window._tblFirebase = { saveToFirestore, deleteFromFirestore, seedFirestore, FB_READY, auth };
