@@ -14,14 +14,14 @@ import {
 /* ─────────────────────────────────────────────
    CONFIG — populated by build.js via env.js
 ───────────────────────────────────────────── */
-const ENV    = window.__TBL_ENV__ || {};
+const ENV = window.__TBL_ENV__ || {};
 const CONFIG = {
-  apiKey:            ENV.FIREBASE_API_KEY            || '',
-  authDomain:        ENV.FIREBASE_AUTH_DOMAIN        || '',
-  projectId:         ENV.FIREBASE_PROJECT_ID         || '',
-  storageBucket:     ENV.FIREBASE_STORAGE_BUCKET     || '',
-  messagingSenderId: ENV.FIREBASE_MESSAGING_SENDER_ID|| '',
-  appId:             ENV.FIREBASE_APP_ID             || '',
+  apiKey: ENV.FIREBASE_API_KEY || 'AIzaSyCl-Q5lcV4um3MAKUgK-w3Nja8-opix2hI',
+  authDomain: ENV.FIREBASE_AUTH_DOMAIN || 'tbl-site-e6127.firebaseapp.com',
+  projectId: ENV.FIREBASE_PROJECT_ID || 'tbl-site-e6127',
+  storageBucket: ENV.FIREBASE_STORAGE_BUCKET || 'tbl-site-e6127.firebasestorage.app',
+  messagingSenderId: ENV.FIREBASE_MESSAGING_SENDER_ID || '286603863322',
+  appId: ENV.FIREBASE_APP_ID || '1:286603863322:web:410c3fe278e3299dd078a3',
 };
 
 /* ─────────────────────────────────────────────
@@ -36,15 +36,15 @@ if (!FB_READY) {
 /* ─────────────────────────────────────────────
    INIT
 ───────────────────────────────────────────── */
-let db          = null;
-let auth        = null;
+let db = null;
+let auth = null;
 let articlesCol = null;
 
 if (FB_READY) {
   try {
     const app = initializeApp(CONFIG);
-    db          = getFirestore(app);
-    auth        = getAuth(app);
+    db = getFirestore(app);
+    auth = getAuth(app);
     articlesCol = collection(db, 'articles');
   } catch (e) {
     console.warn('TBL Firebase: init failed.', e);
@@ -109,19 +109,19 @@ function startLiveSync() {
 
     window.ARTICLES.length = 0;
     fresh.forEach(a => window.ARTICLES.push(a));
-    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
+    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) { }
 
     if (typeof buildDashboard === 'function' &&
-        document.getElementById('panel-dashboard')?.classList.contains('active')) {
+      document.getElementById('panel-dashboard')?.classList.contains('active')) {
       buildDashboard();
       if (typeof showToast === 'function') showToast('🔄 Articles synced.');
     }
     if (typeof filterArticles === 'function' &&
-        document.getElementById('panel-articles')?.classList.contains('active')) {
+      document.getElementById('panel-articles')?.classList.contains('active')) {
       filterArticles(window._articlesListFilter || 'all');
     }
     if (typeof initHome === 'function' &&
-        document.getElementById('panel-home')?.classList.contains('active')) {
+      document.getElementById('panel-home')?.classList.contains('active')) {
       initHome();
     }
   }, err => console.warn('TBL Firebase: live sync error.', err));
@@ -137,7 +137,7 @@ function showLoadingOverlay(show) {
   let el = document.getElementById('tbl-fb-loader');
 
   if (!el && show) {
-    el    = document.createElement('div');
+    el = document.createElement('div');
     el.id = 'tbl-fb-loader';
     el.style.cssText = `
       position:fixed; inset:0; background:rgba(10,10,10,0.85);
@@ -163,7 +163,7 @@ function showLoadingOverlay(show) {
 
   } else if (el && !show) {
     if (_overlayTimeout) { clearTimeout(_overlayTimeout); _overlayTimeout = null; }
-    el.style.opacity    = '0';
+    el.style.opacity = '0';
     el.style.transition = 'opacity 0.3s ease';
     setTimeout(() => el?.remove(), 320);
   }
@@ -176,7 +176,7 @@ window.addEventListener('load', async () => {
 
   /* ── Patch 1: persistArticles ── */
   window.persistArticles = function () {
-    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
+    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) { }
     if (FB_READY) window.ARTICLES.forEach(a => saveToFirestore(a));
   };
 
@@ -198,22 +198,35 @@ window.addEventListener('load', async () => {
     const defaults = window.DEFAULT_ARTICLES || [];
     window.ARTICLES.length = 0;
     defaults.forEach((a, i) => window.ARTICLES.push({ ...a, id: i }));
-    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
+    try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) { }
     if (FB_READY) seedFirestore(window.ARTICLES);
     if (typeof buildDashboard === 'function') buildDashboard();
-    if (typeof showToast      === 'function') showToast('✅ Articles reset to defaults.');
-    if (typeof navigate       === 'function') navigate('dashboard');
+    if (typeof showToast === 'function') showToast('✅ Articles reset to defaults.');
+    if (typeof navigate === 'function') navigate('dashboard');
   };
 
-  /* ── Auth state listener ──
-     BUG FIX — was commented out; now active.
-     Handles page refresh while logged in.        */
+  /* ── Auth state listener ── */
   if (auth) {
     onAuthStateChanged(auth, user => {
-      /* isLoggedIn lives in script.js — update it via window */
       window.isLoggedIn = !!user;
       if (typeof updateAdminBtn === 'function') updateAdminBtn();
-      if (user && typeof buildDashboard === 'function') buildDashboard();
+
+      if (user) {
+        // Reset the login button in case it's stuck on "Signing in…"
+        const btn = document.getElementById('login-btn');
+        if (btn) {
+          btn.textContent = 'Sign In';
+          btn.classList.remove('loading');
+        }
+
+        if (typeof buildDashboard === 'function') buildDashboard();
+
+        // Only navigate if currently on the login page
+        const loginPanel = document.getElementById('panel-adminlogin');
+        if (loginPanel?.classList.contains('active')) {
+          if (typeof navigate === 'function') navigate('dashboard');
+        }
+      }
     });
   }
 
@@ -227,7 +240,7 @@ window.addEventListener('load', async () => {
     if (cloudArticles && cloudArticles.length > 0) {
       window.ARTICLES.length = 0;
       cloudArticles.forEach(a => window.ARTICLES.push(a));
-      try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) {}
+      try { localStorage.setItem('tbl_articles', JSON.stringify(window.ARTICLES)); } catch (_) { }
       console.info('TBL Firebase: loaded', cloudArticles.length, 'articles from cloud.');
     } else {
       await seedFirestore(window.ARTICLES);
@@ -239,11 +252,11 @@ window.addEventListener('load', async () => {
   }
 
   /* Rebuild UI with synced data */
-  if (typeof buildCards       === 'function') {
-    buildCards('home-cards',     window.ARTICLES.slice(0, 3));
+  if (typeof buildCards === 'function') {
+    buildCards('home-cards', window.ARTICLES.slice(0, 3));
     buildCards('articles-cards', window.ARTICLES.slice(3, 7));
   }
-  if (typeof initHome         === 'function') initHome();
+  if (typeof initHome === 'function') initHome();
   if (typeof initArticlesPage === 'function') initArticlesPage();
 
   startLiveSync();

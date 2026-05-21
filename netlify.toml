@@ -11,4 +11,32 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://www.gstatic.com https://www.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+    Content-Security-Policy = """
+  default-src 'self';
+
+  script-src 'self' 'unsafe-inline'
+    https://www.gstatic.com
+    https://www.googleapis.com
+    https://apis.google.com
+    https://cdn.jsdelivr.net
+    https://cdnjs.cloudflare.com;
+
+  style-src 'self' 'unsafe-inline'
+    https://fonts.googleapis.com;
+
+  img-src 'self' data: https:;
+
+  connect-src 'self'
+    https://firestore.googleapis.com
+    https://identitytoolkit.googleapis.com
+    https://securetoken.googleapis.com
+    https://www.googleapis.com
+    https://www.gstatic.com;
+
+  frame-src
+    https://*.firebaseapp.com
+    https://*.google.com;
+
+  font-src 'self'
+    https://fonts.gstatic.com;
+"""
