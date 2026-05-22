@@ -999,6 +999,23 @@ function renderArticlesList(page) {
 /* ─────────────────────────────────────────────
    GLOBAL EXPORTS — required for inline onclick
 ───────────────────────────────────────────── */
+window.addEventListener('load', () => {
+  // Only activate accordion on mobile
+  if (window.innerWidth > 768) return;
+ 
+  document.querySelectorAll('.footer-col .footer-col-title').forEach(title => {
+    title.style.cursor = 'pointer';
+    title.addEventListener('click', () => {
+      const col = title.closest('.footer-col');
+      const isOpen = col.classList.contains('open');
+      // close all first
+      document.querySelectorAll('.footer-col').forEach(c => c.classList.remove('open'));
+      // toggle clicked
+      if (!isOpen) col.classList.add('open');
+    });
+  });
+});
+
 window.navigate              = navigate;
 window.openArticle           = openArticle;
 window.openCategory          = openCategory;

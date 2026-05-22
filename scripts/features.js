@@ -38,42 +38,8 @@
   /* ═══════════════════════════════════════════════════════════
      FEATURE 2 — IN-ARTICLE READING PROGRESS BAR
   ═══════════════════════════════════════════════════════════ */
-  let artProgressBar = null;
 
-  function initArticleProgress() {
-    if (!artProgressBar) {
-      artProgressBar = document.createElement('div');
-      artProgressBar.id = 'art-progress-bar';
-      artProgressBar.style.cssText = `
-        position:fixed; top:64px; left:0; height:3px;
-        background:#e31c1c; width:0%; z-index:999;
-        pointer-events:none; transition:width 0.1s linear;
-        box-shadow:0 0 8px rgba(227,28,28,0.6);
-      `;
-      document.body.appendChild(artProgressBar);
-    }
-    artProgressBar.style.display = 'block';
-    artProgressBar.style.width = '0%';
-
-    function updateProgress() {
-      if (!document.getElementById('panel-article')?.classList.contains('active')) {
-        artProgressBar.style.display = 'none';
-        return;
-      }
-      const body = document.getElementById('art-body');
-      if (!body) return;
-      const rect = body.getBoundingClientRect();
-      const total = rect.height;
-      const done = Math.min(Math.max(-rect.top, 0), total);
-      artProgressBar.style.width = (total > 0 ? (done / total) * 100 : 0) + '%';
-    }
-
-    window.addEventListener('scroll', updateProgress, { passive: true });
-  }
-
-  function hideArticleProgress() {
-    if (artProgressBar) artProgressBar.style.display = 'none';
-  }
+  
 
   /* ═══════════════════════════════════════════════════════════
      FEATURE 3 — BOOKMARKS / READING LIST
@@ -178,8 +144,12 @@
           <p style="font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#e31c1c;margin-bottom:.3rem;">Your List</p>
           <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.05em;color:#f5f5f5;">Reading List</h2>
         </div>
-        <button onclick="closeReadingList()" style="background:none;border:1px solid rgba(255,255,255,0.1);color:#888;width:34px;height:34px;border-radius:4px;font-size:18px;cursor:pointer;">✕</button>
-      </div>
+         <button onclick="closeReadingList()" style="
+      background:none;border:1px solid rgba(255,255,255,0.1);color:#888;
+      width:44px;height:44px;border-radius:4px;font-size:18px;
+      cursor:pointer !important;display:flex;align-items:center;
+      justify-content:center;flex-shrink:0;
+    ">✕</button>
       <div id="rl-content"></div>
     `;
     document.body.appendChild(overlay);
@@ -192,28 +162,39 @@
     const overlay = document.getElementById('rl-overlay');
     const list = getBookmarks();
     const content = document.getElementById('rl-content');
+    if (!content) return;
 
     if (!list.length) {
       content.innerHTML = `
-        <div style="text-align:center;padding:3rem 0;color:#888;">
+        <div style="text-align:center;padding:3rem 0;">
           <p style="font-size:36px;margin-bottom:1rem;">📚</p>
           <p style="font-size:14px;font-weight:600;color:#f5f5f5;margin-bottom:.5rem;">Nothing saved yet</p>
-          <p style="font-size:12px;">Click the ♡ button on any article to save it here.</p>
+          <p style="font-size:12px;color:#888;">Tap the ♡ on any article to save it.</p>
         </div>`;
     } else {
-      const articles = (window.ARTICLES || []).filter(a => list.includes(a.id));
-      content.innerHTML = articles.map(a => `
-        <div class="rl-item" onclick="closeReadingList();openArticle(${a.id})">
-          ${a.img ? `<img src="${a.img}" alt="${a.title}" style="width:72px;height:54px;object-fit:cover;border-radius:4px;flex-shrink:0;">` : ''}
-          <div style="flex:1;min-width:0;">
-            <p style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#e31c1c;margin-bottom:.3rem;">${a.tag}</p>
-            <p style="font-size:13px;font-weight:600;color:#f5f5f5;line-height:1.4;">${a.title}</p>
-            <p style="font-size:11px;color:#888;margin-top:.25rem;">⏱ ${calcReadTime(a.body || '')} min read</p>
-          </div>
-          <button onclick="event.stopPropagation();toggleBookmark(${a.id})"
-            style="background:none;border:none;color:#e31c1c;font-size:16px;cursor:pointer;flex-shrink:0;">♥</button>
-        </div>`
-      ).join('');
+      // FIX: use .find() not bracket access so ids match after deletions
+      const articles = (window.ARTICLES || []).filter(a => list.includes(Number(a.id)));
+      if (!articles.length) {
+        content.innerHTML = `<p style="color:#888;text-align:center;padding:2rem 0;font-size:13px;">Saved articles no longer exist.</p>`;
+      } else {
+        content.innerHTML = articles.map(a => `
+          <div class="rl-item" onclick="closeReadingList();openArticle(${a.id})"
+            style="display:flex;align-items:center;gap:.75rem;padding:.85rem;
+              border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;
+              border-radius:4px;transition:background .15s;">
+            ${a.img ? `<img src="${a.img}" alt="" style="width:72px;height:54px;object-fit:cover;border-radius:4px;flex-shrink:0;">` : ''}
+            <div style="flex:1;min-width:0;">
+              <p style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#e31c1c;margin-bottom:.3rem;">${a.tag}</p>
+              <p style="font-size:13px;font-weight:600;color:#f5f5f5;line-height:1.4;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.title}</p>
+              <p style="font-size:11px;color:#888;margin-top:.25rem;">⏱ ${calcReadTime(a.body || '')} min read</p>
+            </div>
+            <button onclick="event.stopPropagation();toggleBookmark(${a.id})"
+              style="background:none;border:none;color:#e31c1c;font-size:18px;
+                cursor:pointer;flex-shrink:0;padding:4px;line-height:1;">♥</button>
+          </div>`
+        ).join('');
+      }
     }
 
     overlay.style.display = 'block';
@@ -415,6 +396,8 @@
     }
   }
 
+  window.applyTheme = applyTheme;
+
   /* ═══════════════════════════════════════════════════════════
      FEATURE 11 — READING LIST NAV BUTTON
   ═══════════════════════════════════════════════════════════ */
@@ -481,17 +464,18 @@
     const saved = localStorage.getItem('tbl_theme') || 'dark';
 
     row.innerHTML = `
-      <button class="mobile-tool-btn" id="mobile-theme-btn" onclick="(function(){
-        const cur = localStorage.getItem('tbl_theme') || 'dark';
-        const nxt = cur === 'dark' ? 'light' : 'dark';
-        if(typeof applyTheme === 'function') applyTheme(nxt);
-        localStorage.setItem('tbl_theme', nxt);
-        document.getElementById('mobile-theme-btn').textContent = nxt === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-        const dt = document.getElementById('theme-toggle');
-        if(dt) dt.innerHTML = nxt === 'dark' ? '☀️' : '🌙';
-      })()">
-        ${saved === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
-      </button>
+       <button class="mobile-tool-btn" id="mobile-theme-btn"
+    onclick="
+      var cur = localStorage.getItem('tbl_theme') || 'dark';
+      var nxt = cur === 'dark' ? 'light' : 'dark';
+      window.applyTheme(nxt);
+      localStorage.setItem('tbl_theme', nxt);
+      this.textContent = nxt === 'dark' ? '\u2600\uFE0F Light Mode' : '\uD83C\uDF19 Dark Mode';
+      var dt = document.getElementById('theme-toggle');
+      if (dt) dt.innerHTML = nxt === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+    ">
+    ${saved === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+  </button>
  
       <button class="mobile-tool-btn" onclick="openReadingList();closeMobile()">
         <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2">
@@ -521,27 +505,18 @@
     if (!_orig) return;
     window.openArticle = function (id) {
       _orig(id);
-      const a = (window.ARTICLES || [])[id];
+      const a = (window.ARTICLES || []).find(x => x.id == id);
       if (!a) return;
       setTimeout(() => {
         addReadTimeToArticle(a);
         addViewCountToArticle(a);
         injectBookmarkIntoArticle(a);
         injectShareButtons(a);
-        initArticleProgress();
+        // initArticleProgress() REMOVED — use global scroll bar instead
       }, 80);
     };
   }
-
-  function patchNavigateForProgress() {
-    const _orig = window.navigate;
-    if (!_orig) return;
-    window.navigate = function (page, e) {
-      _orig(page, e);
-      if (page !== 'article') hideArticleProgress();
-    };
-  }
-
+  
   /* ═══════════════════════════════════════════════════════════
      SAFE TOAST
   ═══════════════════════════════════════════════════════════ */
@@ -560,7 +535,6 @@
   window.addEventListener('load', () => {
     patchCardHTMLForReadTime();
     patchOpenArticle();
-    patchNavigateForProgress();
     initBackToTop();
     initKeyboardShortcuts();
     injectNavReadingListBtn();
