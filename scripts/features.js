@@ -53,18 +53,18 @@
       document.body.appendChild(artProgressBar);
     }
     artProgressBar.style.display = 'block';
-    artProgressBar.style.width   = '0%';
+    artProgressBar.style.width = '0%';
 
     function updateProgress() {
       if (!document.getElementById('panel-article')?.classList.contains('active')) {
         artProgressBar.style.display = 'none';
         return;
       }
-      const body  = document.getElementById('art-body');
+      const body = document.getElementById('art-body');
       if (!body) return;
-      const rect  = body.getBoundingClientRect();
+      const rect = body.getBoundingClientRect();
       const total = rect.height;
-      const done  = Math.min(Math.max(-rect.top, 0), total);
+      const done = Math.min(Math.max(-rect.top, 0), total);
       artProgressBar.style.width = (total > 0 ? (done / total) * 100 : 0) + '%';
     }
 
@@ -117,20 +117,27 @@
 
   function updateReadingListBadge() {
     const count = getBookmarks().length;
+    // desktop badge
     document.querySelectorAll('.reading-list-badge').forEach(el => {
       el.textContent = count;
       el.style.display = count > 0 ? 'inline-flex' : 'none';
     });
+    // mobile badge
+    const mobileBadge = document.getElementById('mobile-rl-badge');
+    if (mobileBadge) {
+      mobileBadge.textContent = count;
+      mobileBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+    }
   }
 
   function makeBookmarkBtn(articleId) {
     const saved = isBookmarked(articleId);
-    const btn   = document.createElement('button');
-    btn.className   = `bookmark-btn${saved ? ' saved' : ''}`;
-    btn.dataset.id  = articleId;
-    btn.title       = saved ? 'Remove from Reading List' : 'Save to Reading List';
-    btn.innerHTML   = `<span class="bm-icon">${saved ? '♥' : '♡'}</span> <span class="bm-label">Save</span>`;
-    btn.onclick     = e => { e.stopPropagation(); toggleBookmark(articleId); };
+    const btn = document.createElement('button');
+    btn.className = `bookmark-btn${saved ? ' saved' : ''}`;
+    btn.dataset.id = articleId;
+    btn.title = saved ? 'Remove from Reading List' : 'Save to Reading List';
+    btn.innerHTML = `<span class="bm-icon">${saved ? '♥' : '♡'}</span> <span class="bm-label">Save</span>`;
+    btn.onclick = e => { e.stopPropagation(); toggleBookmark(articleId); };
     return btn;
   }
 
@@ -181,9 +188,9 @@
 
   window.openReadingList = function () {
     createReadingListDrawer();
-    const drawer  = document.getElementById('reading-list-drawer');
+    const drawer = document.getElementById('reading-list-drawer');
     const overlay = document.getElementById('rl-overlay');
-    const list    = getBookmarks();
+    const list = getBookmarks();
     const content = document.getElementById('rl-content');
 
     if (!list.length) {
@@ -214,9 +221,9 @@
   };
 
   window.closeReadingList = function () {
-    const drawer  = document.getElementById('reading-list-drawer');
+    const drawer = document.getElementById('reading-list-drawer');
     const overlay = document.getElementById('rl-overlay');
-    if (drawer)  drawer.style.right = '-420px';
+    if (drawer) drawer.style.right = '-420px';
     if (overlay) setTimeout(() => { overlay.style.display = 'none'; }, 400);
   };
 
@@ -228,7 +235,7 @@
     if (existing) existing.remove();
 
     const row = document.createElement('div');
-    row.id        = 'art-share-row';
+    row.id = 'art-share-row';
     row.className = 'art-share-row';
     row.innerHTML = `
       <span class="share-label">Share:</span>
@@ -240,7 +247,7 @@
     const divider = document.querySelector('.article-divider');
     if (divider) divider.insertAdjacentElement('afterend', row);
 
-    const url  = `${location.origin}${location.pathname}#article-${a.id}`;
+    const url = `${location.origin}${location.pathname}#article-${a.id}`;
     const text = `"${a.title}" — ${a.deck}`;
 
     document.getElementById('share-copy').onclick = () => {
@@ -264,18 +271,18 @@
 
   function incrementView(id) {
     const views = getViews();
-    views[id]   = (views[id] || 0) + 1;
+    views[id] = (views[id] || 0) + 1;
     localStorage.setItem('tbl_views', JSON.stringify(views));
     return views[id];
   }
 
   function addViewCountToArticle(a) {
-    const count   = incrementView(a.id);
+    const count = incrementView(a.id);
     const existing = document.getElementById('art-view-count');
     if (existing) existing.remove();
-    const el      = document.createElement('span');
-    el.id         = 'art-view-count';
-    el.className  = 'art-view-count';
+    const el = document.createElement('span');
+    el.id = 'art-view-count';
+    el.className = 'art-view-count';
     el.textContent = `👁 ${count} view${count !== 1 ? 's' : ''}`;
     const meta = document.querySelector('.article-meta');
     if (meta) meta.appendChild(el);
@@ -286,8 +293,8 @@
   ═══════════════════════════════════════════════════════════ */
   function initBackToTop() {
     const btn = document.createElement('button');
-    btn.id       = 'back-to-top';
-    btn.title    = 'Back to top';
+    btn.id = 'back-to-top';
+    btn.title = 'Back to top';
     btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>`;
     document.body.appendChild(btn);
 
@@ -299,7 +306,7 @@
 
     if (typeof gsap !== 'undefined') {
       btn.addEventListener('mouseenter', () => gsap.to(btn, { y: -3, duration: 0.2, ease: 'power2.out' }));
-      btn.addEventListener('mouseleave', () => gsap.to(btn, { y:  0, duration: 0.2, ease: 'power2.out' }));
+      btn.addEventListener('mouseleave', () => gsap.to(btn, { y: 0, duration: 0.2, ease: 'power2.out' }));
     }
   }
 
@@ -310,12 +317,12 @@
     document.addEventListener('keydown', e => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
       switch (e.key) {
-        case '/':        e.preventDefault(); document.getElementById('desktop-search')?.focus(); break;
-        case 'Escape':   if (typeof window.closeReadingList === 'function') window.closeReadingList(); break;
-        case 'h':        if (!e.ctrlKey && !e.metaKey) window.navigate('home');       break;
-        case 'a':        if (!e.ctrlKey && !e.metaKey) window.navigate('articles');   break;
-        case 'c':        if (!e.ctrlKey && !e.metaKey) window.navigate('categories'); break;
-        case 'b':        if (!e.ctrlKey && !e.metaKey) window.openReadingList();      break;
+        case '/': e.preventDefault(); document.getElementById('desktop-search')?.focus(); break;
+        case 'Escape': if (typeof window.closeReadingList === 'function') window.closeReadingList(); break;
+        case 'h': if (!e.ctrlKey && !e.metaKey) window.navigate('home'); break;
+        case 'a': if (!e.ctrlKey && !e.metaKey) window.navigate('articles'); break;
+        case 'c': if (!e.ctrlKey && !e.metaKey) window.navigate('categories'); break;
+        case 'b': if (!e.ctrlKey && !e.metaKey) window.openReadingList(); break;
         case 'ArrowLeft':
           if (document.getElementById('panel-article')?.classList.contains('active')) {
             document.getElementById('back-btn')?.click();
@@ -331,7 +338,7 @@
   function showShortcutsHelp() {
     let box = document.getElementById('shortcuts-help');
     if (box) { box.remove(); return; }
-    box    = document.createElement('div');
+    box = document.createElement('div');
     box.id = 'shortcuts-help';
     box.innerHTML = `
       <div class="sh-header">
@@ -362,18 +369,27 @@
     const saved = localStorage.getItem('tbl_theme') || 'dark';
     applyTheme(saved);
 
-    const btn    = document.createElement('button');
-    btn.id       = 'theme-toggle';
-    btn.title    = 'Toggle theme';
+    // Don't inject twice
+    if (document.getElementById('theme-toggle')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'theme-toggle';
+    btn.title = 'Toggle theme';
     btn.innerHTML = saved === 'dark' ? '☀️' : '🌙';
-    document.querySelector('.nav-inner')?.insertBefore(btn, document.getElementById('admin-nav-btn'));
+
+    // On desktop inject before admin btn
+    const adminBtn = document.getElementById('admin-nav-btn');
+    if (adminBtn) adminBtn.parentElement.insertBefore(btn, adminBtn);
 
     btn.onclick = () => {
       const current = localStorage.getItem('tbl_theme') || 'dark';
-      const next    = current === 'dark' ? 'light' : 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
       applyTheme(next);
       btn.innerHTML = next === 'dark' ? '☀️' : '🌙';
       localStorage.setItem('tbl_theme', next);
+      // Also update mobile button if it exists
+      const mobileBtn = document.getElementById('mobile-theme-btn');
+      if (mobileBtn) mobileBtn.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
       if (typeof gsap !== 'undefined') {
         gsap.fromTo(btn, { rotation: -30, scale: 0.8 }, { rotation: 0, scale: 1, duration: 0.4, ease: 'back.out(1.8)' });
       }
@@ -383,18 +399,18 @@
   function applyTheme(theme) {
     const root = document.documentElement;
     if (theme === 'light') {
-      root.style.setProperty('--tbl-bg',      '#f5f5f0');
+      root.style.setProperty('--tbl-bg', '#f5f5f0');
       root.style.setProperty('--tbl-surface', '#ffffff');
-      root.style.setProperty('--tbl-white',   '#1a1a1a');
-      root.style.setProperty('--tbl-muted',   '#666666');
-      root.style.setProperty('--tbl-border',  'rgba(0,0,0,0.1)');
+      root.style.setProperty('--tbl-white', '#1a1a1a');
+      root.style.setProperty('--tbl-muted', '#666666');
+      root.style.setProperty('--tbl-border', 'rgba(0,0,0,0.1)');
       document.body.style.background = '#f5f5f0';
     } else {
-      root.style.setProperty('--tbl-bg',      '#0a0a0a');
+      root.style.setProperty('--tbl-bg', '#0a0a0a');
       root.style.setProperty('--tbl-surface', '#141414');
-      root.style.setProperty('--tbl-white',   '#f5f5f5');
-      root.style.setProperty('--tbl-muted',   '#888888');
-      root.style.setProperty('--tbl-border',  'rgba(255,255,255,0.08)');
+      root.style.setProperty('--tbl-white', '#f5f5f5');
+      root.style.setProperty('--tbl-muted', '#888888');
+      root.style.setProperty('--tbl-border', 'rgba(255,255,255,0.08)');
       document.body.style.background = '#0a0a0a';
     }
   }
@@ -404,9 +420,9 @@
   ═══════════════════════════════════════════════════════════ */
   function injectNavReadingListBtn() {
     if (document.getElementById('nav-reading-list-btn')) return;
-    const btn    = document.createElement('button');
-    btn.id       = 'nav-reading-list-btn';
-    btn.title    = 'Reading List (B)';
+    const btn = document.createElement('button');
+    btn.id = 'nav-reading-list-btn';
+    btn.title = 'Reading List (B)';
     btn.style.cssText = `
       background:none; border:1px solid rgba(255,255,255,0.08);
       color:#888; font-family:'Barlow',sans-serif; font-size:12px;
@@ -426,7 +442,7 @@
     const adminBtn = document.getElementById('admin-nav-btn');
     if (adminBtn) adminBtn.parentElement.insertBefore(btn, adminBtn);
     btn.addEventListener('mouseenter', () => { btn.style.color = '#f5f5f5'; btn.style.borderColor = '#888'; });
-    btn.addEventListener('mouseleave', () => { btn.style.color = '#888';   btn.style.borderColor = 'rgba(255,255,255,0.08)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.color = '#888'; btn.style.borderColor = 'rgba(255,255,255,0.08)'; });
     updateReadingListBadge();
   }
 
@@ -435,9 +451,9 @@
   ═══════════════════════════════════════════════════════════ */
   function injectShortcutsBtn() {
     if (document.getElementById('shortcuts-btn')) return;
-    const btn    = document.createElement('button');
-    btn.id       = 'shortcuts-btn';
-    btn.title    = 'Keyboard shortcuts';
+    const btn = document.createElement('button');
+    btn.id = 'shortcuts-btn';
+    btn.title = 'Keyboard shortcuts';
     btn.style.cssText = `
       background:none; border:1px solid rgba(255,255,255,0.08);
       color:#888; width:34px; height:34px; border-radius:4px;
@@ -446,11 +462,55 @@
       transition:color .2s,border-color .2s;
     `;
     btn.innerHTML = '⌨';
-    btn.onclick   = showShortcutsHelp;
+    btn.onclick = showShortcutsHelp;
     const adminBtn = document.getElementById('admin-nav-btn');
     if (adminBtn) adminBtn.parentElement.insertBefore(btn, adminBtn);
     btn.addEventListener('mouseenter', () => { btn.style.color = '#f5f5f5'; btn.style.borderColor = '#888'; });
-    btn.addEventListener('mouseleave', () => { btn.style.color = '#888';   btn.style.borderColor = 'rgba(255,255,255,0.08)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.color = '#888'; btn.style.borderColor = 'rgba(255,255,255,0.08)'; });
+  }
+
+
+  function injectMobileTools() {
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (!mobileMenu || document.getElementById('mobile-tools-row')) return;
+
+    const row = document.createElement('div');
+    row.id = 'mobile-tools-row';
+    row.className = 'mobile-menu-tools';
+
+    const saved = localStorage.getItem('tbl_theme') || 'dark';
+
+    row.innerHTML = `
+      <button class="mobile-tool-btn" id="mobile-theme-btn" onclick="(function(){
+        const cur = localStorage.getItem('tbl_theme') || 'dark';
+        const nxt = cur === 'dark' ? 'light' : 'dark';
+        if(typeof applyTheme === 'function') applyTheme(nxt);
+        localStorage.setItem('tbl_theme', nxt);
+        document.getElementById('mobile-theme-btn').textContent = nxt === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+        const dt = document.getElementById('theme-toggle');
+        if(dt) dt.innerHTML = nxt === 'dark' ? '☀️' : '🌙';
+      })()">
+        ${saved === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+      </button>
+ 
+      <button class="mobile-tool-btn" onclick="openReadingList();closeMobile()">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+        Saved
+        <span class="reading-list-badge" id="mobile-rl-badge">0</span>
+      </button>
+ 
+      <button class="mobile-tool-btn" onclick="showShortcutsHelp();closeMobile()">
+        ⌨ Shortcuts
+      </button>
+    `;
+
+    // Insert as first child of mobile menu
+    mobileMenu.insertBefore(row, mobileMenu.firstChild);
+
+    // Sync badge count
+    updateReadingListBadge();
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -506,6 +566,7 @@
     injectNavReadingListBtn();
     injectShortcutsBtn();
     initThemeToggle();
+    injectMobileTools();           // ← NEW: adds tools to mobile menu
     updateReadingListBadge();
   });
 
